@@ -1,6 +1,6 @@
 import logging
+import math
 import struct
-import datetime
 
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 import homeassistant.helpers.config_validation as cv
@@ -8,38 +8,28 @@ import voluptuous as vol
 
 from homeassistant.helpers.entity import Entity
 from homeassistant.util import Throttle
-from homeassistant.const import (TEMP_CELSIUS, DEVICE_CLASS_HUMIDITY, DEVICE_CLASS_TEMPERATURE, DEVICE_CLASS_PRESSURE, STATE_UNKNOWN)
+from homeassistant.const import STATE_UNKNOWN
+
+from .const import (ATTRIBUTION, ATTR_ATTRIBUTION, DOMAIN, SENSOR_TYPES, MIN_TIME_BETWEEN_UPDATES, CONF_MAC, UNIT_SYSTEMS, CONF_UNIT_SYSTEM, UNIT_SYSTEM_IMPERIAL)
 
 _LOGGER = logging.getLogger(__name__)
 
-DOMAIN = 'airthings_wave_plus'
-
-CONF_MAC = 'mac'
-
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_MAC): cv.string,
+    vol.Optional(CONF_UNIT_SYSTEM, default=UNIT_SYSTEM_IMPERIAL):
+                vol.In( UNIT_SYSTEMS.keys() )
 })
-
-MIN_TIME_BETWEEN_UPDATES = datetime.timedelta(minutes=15)
-
-SENSOR_TYPES = [
-    # key            name                unit          icon         device class
-    [ 'temperature', 'Temperature',      TEMP_CELSIUS, None,        DEVICE_CLASS_TEMPERATURE ],
-    [ 'co2',         'CO2',              'ppm',        'mdi:cloud', None ],
-    [ 'pressure',    'Pressure',         'mbar',       'mdi:gauge', DEVICE_CLASS_PRESSURE ],
-    [ 'humidity',    'Humidity',         '%',          None,        DEVICE_CLASS_HUMIDITY ],
-    [ 'voc',         'VOC',              'ppm',        'mdi:cloud', None ],
-    [ 'short_radon', 'Short-term Radon', 'Bq/m3',      'mdi:cloud', None ],
-    [ 'long_radon',  'Long-term Radon',  'Bq/m3',      'mdi:cloud', None ],
-]
-
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Setup the sensor platform."""
-    reader = AirthingsWavePlusDataReader(config.get(CONF_MAC))
+    unit_system = config.get(CONF_UNIT_SYSTEM)
+    _LOGGER.debug(f"Using unit system '{unit_system}'")
 
+    reader = AirthingsWavePlusDataReader(config.get(CONF_MAC))
+ 
     sensors = []
-    for [key, name, unit, icon, device_class] in SENSOR_TYPES:
+    for [key, name, icon, device_class] in SENSOR_TYPES:
+        unit = UNIT_SYSTEMS[unit_system].get(key)
         sensors.append( AirthingsSensorEntity(reader, key, name, unit, icon, device_class) )
     add_devices(sensors)
 
@@ -74,7 +64,7 @@ class AirthingsWavePlusDataReader:
             
             # Unclear why this does not work. Seems broken in the command line tool too. Hopefully handle is stable...
             #value = device.char_read(char,timeout=10)
-            value = device.char_read_handle('0x000d',timeout=10)
+            value = device.char_read_handle('0x000d', timeout=10)
             (humidity, light, sh_rad, lo_rad, temp, pressure, co2, voc) = struct.unpack('<xbxbHHHHHHxxxx', value)
             
             self._state['humidity']    = humidity / 2.0
@@ -85,6 +75,15 @@ class AirthingsWavePlusDataReader:
             self._state['pressure']    = pressure / 50.0
             self._state['co2']         = co2 * 1.0
             self._state['voc']         = voc * 1.0
+
+            temp_celsius = temp # FIXME: assumed Celsius
+
+            # calculate vapor pressure deficit
+            saturation_vapor_pressure = 0.6108 * exp(17.27 * temp_celsius / (temp_celsius + 237.3))
+            actual_vapor_pressure = humidity / 100 * saturation_vapor_pressure
+            vapor_pressure_deficit = actual_vapor_pressure - saturation_vapor_pressure
+            self._state['vpd'] = vapor_pressure_deficit
+
         finally:
             adapter.stop()
 
@@ -99,6 +98,10 @@ class AirthingsSensorEntity(Entity):
         self._unit = unit
         self._icon = icon
         self._device_class = device_class
+
+        self._attrs = {
+            ATTR_ATTRIBUTION : ATTRIBUTION
+        }
 
     @property
     def name(self):
@@ -134,3 +137,8 @@ class AirthingsSensorEntity(Entity):
         This is the only method that should fetch new data for Home Assistant.
         """
         self._reader.update()
+
+   @property
+    def device_state_attributes(self):
+        """Return the device state attributes."""
+        return self._attrs
