@@ -40,8 +40,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     for key in SENSORS_BY_MODEL[model]:
         [name, icon, device_class] = SENSOR_TYPES[key]
         unit = UNIT_SYSTEMS[unit_system].get(key)
-        sensors.append(AirthingsSensorEntity(
-            reader, key, name, unit, icon, device_class))
+        sensors.append(AirthingsSensorEntity(reader, key, name, unit, icon, device_class))
     add_devices(sensors)
 
 

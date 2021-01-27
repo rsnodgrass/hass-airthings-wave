@@ -1,30 +1,51 @@
-# Airthings Wave Plus Environment Sensor for Home Assistant
+# Airthings Wave Air Quality for Home Assistant
 
-This was developed by [@gkreitz](https://github.com/gkreitz) and forked from (https://github.com/gkreitz/homeassistant-airthings)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/custom-components/hacs)
+![beta_badge](https://img.shields.io/badge/maturity-Beta-yellow.png)
 
-Quick n' dirty hack to get [Airthings Wave Plus](https://amazon.com/Airthings-2930-Quality-Detection-Dashboard/dp/B07JB8QWH6?tag=rynoshark-20) indoor air quality sensors into Home Assistant.
+Home Assistant support for the [Airthing Wave](https://smile.amazon.com/Airthings-Wave-Generation-Easy-Use/dp/B07WWV7K3K?tag=rynoshark-20) and [Airthings Wave Plus](https://smile.amazon.com/Airthings-2930-Quality-Detection-Dashboard/dp/B07JB8QWH6?tag=rynoshark-20) indoor air quality sensors.
+## Support
 
-**Beware, very untested. Only works with Airthings Wave Plus.**
+**Beware, very untested.**
 
-I wanted something to read my Airthings Wave Plus, so I built this. Far from production quality. Magic hardcoded constants. Reads data the wrong way to work around a bug. Tested on a single device. Only supports a single Wave Plus. Does not construct a unique id for the sensor. Figured I may as well upload in case it's useful to someone else.
+This was developed by [@gkreitz](https://github.com/gkreitz/homeassistant-airthings) and [@mstanislav](https://github.com/mstanislav/homeassistant-airthings).
 
+From @gkreitz: *I wanted something to read my Airthings Wave Plus, so I built this. Far from production quality. Magic hardcoded constants. Reads data the wrong way to work around a bug. Tested on a single device. Only supports a single Wave Plus. Does not construct a unique id for the sensor. Figured I may as well upload in case it's useful to someone else.*
+
+If you have trouble with installation and configuration, visit the [Airthings Wave Home Assistant community discussion](https://community.home-assistant.io/t/sensorpush-humidity-and-temperature-sensors/105711).
+
+**Additional features and bug fixes are the responsibility of the community to implement (unless trivial to add).**
 ## Installation
 
-1. Find out the MAC address of your Airthings Wave Plus. See https://airthings.com/us/raspberry-pi/ for how to find MAC address.
-1. This fork made for intergation through HACS.
-1. Add the following to your `configuration.yaml` (or modify your `sensor` heading, if you already have one):
+### Step 1: Install Custom Components
+
+Make sure [Home Assistant Community Store (HACS)](https://github.com/custom-components/hacs) is installed, then add the "Integration" repository: *gkreitz/hass-airthings-wave*.
+
+Note:
+
+* The 'master' branch of this custom component is considered unstable, alpha quality and not guaranteed to work.
+* 
+* Manual installation by direct download and copying is not supported, if you have issues, please first try installing this integration with HACS.
+
+### Step 2: Configure
+
+1. Find the MAC address for your Airthings Wave. See https://airthings.com/us/raspberry-pi/ for details.
+2. Add the following to your `configuration.yaml` (or modify your `sensor` heading, if you already have one):
+
+The default model is the Airthings Wave:
 
 ```yaml
 sensor:
-  - platform: airthings_wave_plus
+  - platform: airthings_wave
     mac: 00:11:22:AA:BB:CC # replace with MAC of your Airthings Wave+
 ```
 
-Alternative:
+COnfiguring the Airthing Wave model:
 
 ```yaml
 sensor:
-  - platform: airthings_wave_plus
+  - platform: airthings_wave
     model: wave # or waveplus
     unit_system: imperial # or metric
     mac: 00:11:22:AA:BB:CC # replace with MAC of your Airthings Wave+
