@@ -10,15 +10,17 @@ from homeassistant.helpers.entity import Entity
 from homeassistant.util import Throttle
 from homeassistant.const import STATE_UNKNOWN
 
-from .const import (ATTRIBUTION, ATTR_ATTRIBUTION, DOMAIN, SENSOR_TYPES, MIN_TIME_BETWEEN_UPDATES, CONF_MAC, UNIT_SYSTEMS, CONF_UNIT_SYSTEM, UNIT_SYSTEM_IMPERIAL)
+from .const import (ATTRIBUTION, ATTR_ATTRIBUTION, DOMAIN, SENSOR_TYPES, MEASURE_VPD, MEASURE_HUMIDITY,
+                    MIN_TIME_BETWEEN_UPDATES, CONF_MAC, UNIT_SYSTEMS, CONF_UNIT_SYSTEM, UNIT_SYSTEM_IMPERIAL)
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_MAC): cv.string,
     vol.Optional(CONF_UNIT_SYSTEM, default=UNIT_SYSTEM_IMPERIAL):
-                vol.In( UNIT_SYSTEMS.keys() )
+                vol.In(UNIT_SYSTEMS.keys())
 })
+
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Setup the sensor platform."""
@@ -26,12 +28,14 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     _LOGGER.debug(f"Using unit system '{unit_system}'")
 
     reader = AirthingsWavePlusDataReader(config.get(CONF_MAC))
- 
+
     sensors = []
     for [key, name, icon, device_class] in SENSOR_TYPES:
         unit = UNIT_SYSTEMS[unit_system].get(key)
-        sensors.append( AirthingsSensorEntity(reader, key, name, unit, icon, device_class) )
+        sensors.append(AirthingsSensorEntity(
+            reader, key, name, unit, icon, device_class))
     add_devices(sensors)
+
 
 class AirthingsWavePlusDataReader:
     def __init__(self, mac):
@@ -50,42 +54,45 @@ class AirthingsWavePlusDataReader:
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     def update(self):
         _LOGGER.debug(f"Updating data from Airthings Wave Plus {self._mac}")
-        
+
         import pygatt
         from pygatt.backends import Characteristic
         adapter = pygatt.backends.GATTToolBackend()
-        #char = 'b42e2a68-ade7-11e4-89d3-123b93f75cba'
-        
+        # char = 'b42e2a68-ade7-11e4-89d3-123b93f75cba'
+
         try:
             # reset_on_start must be false - reset is hardcoded to execute sudo, which doesn't exist
             # in the hass.io Docker container.
             adapter.start(reset_on_start=False)
             device = adapter.connect(self._mac)
-            
-            # Unclear why this does not work. Seems broken in the command line tool too. Hopefully handle is stable...
-            #value = device.char_read(char,timeout=10)
-            value = device.char_read_handle('0x000d', timeout=10)
-            (humidity, light, sh_rad, lo_rad, temp, pressure, co2, voc) = struct.unpack('<xbxbHHHHHHxxxx', value)
-            
-            self._state['humidity']    = humidity / 2.0
-            self._state['light']       = light * 1.0
-            self._state['short_radon'] = sh_rad
-            self._state['long_radon']  = lo_rad
-            self._state['temperature'] = temp / 100.0
-            self._state['pressure']    = pressure / 50.0
-            self._state['co2']         = co2 * 1.0
-            self._state['voc']         = voc * 1.0
 
-            temp_celsius = temp # FIXME: assumed Celsius
+            # Unclear why this does not work. Seems broken in the command line tool too. Hopefully handle is stable...
+            # value = device.char_read(char,timeout=10)
+            value = device.char_read_handle('0x000d', timeout=10)
+            (humidity, light, sh_rad, lo_rad, temp, pressure,
+             co2, voc) = struct.unpack('<xbxbHHHHHHxxxx', value)
+
+            self._state[MEASURE_HUMIDITY] = humidity / 2.0
+            self._state['light'] = light * 1.0
+            self._state['short_radon'] = sh_rad
+            self._state['long_radon'] = lo_rad
+            self._state['temperature'] = temp / 100.0
+            self._state['pressure'] = pressure / 50.0
+            self._state['co2'] = co2 * 1.0
+            self._state['voc'] = voc * 1.0
+
+            temp_celsius = temp  # FIXME: assumed Celsius
 
             # calculate vapor pressure deficit
-            saturation_vapor_pressure = 0.6108 * exp(17.27 * temp_celsius / (temp_celsius + 237.3))
+            saturation_vapor_pressure = 0.6108 * \
+                exp(17.27 * temp_celsius / (temp_celsius + 237.3))
             actual_vapor_pressure = humidity / 100 * saturation_vapor_pressure
             vapor_pressure_deficit = actual_vapor_pressure - saturation_vapor_pressure
-            self._state['vpd'] = vapor_pressure_deficit
+            self._state[MEASURE_VPD] = vapor_pressure_deficit
 
         finally:
             adapter.stop()
+
 
 class AirthingsSensorEntity(Entity):
     """Representation of a Sensor."""
@@ -100,7 +107,7 @@ class AirthingsSensorEntity(Entity):
         self._device_class = device_class
 
         self._attrs = {
-            ATTR_ATTRIBUTION : ATTRIBUTION
+            ATTR_ATTRIBUTION: ATTRIBUTION
         }
 
     @property
