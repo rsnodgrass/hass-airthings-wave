@@ -40,14 +40,14 @@ Note:
 
 ```yaml
 sensor:
-  - platform: airthings_wave
+  - platform: airthings
     model: waveplus
     mac: 00:11:22:AA:BB:CC # replace with MAC of your Airthings Wave+
 ```
 
 ```yaml
 sensor:
-  - platform: airthings_wave
+  - platform: airthings
     model: wave # or waveplus
     mac: 00:11:22:AA:BB:CC # replace with MAC of your Airthings Wave+
     unit_system: imperial # or metric
