@@ -26,13 +26,19 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Setup the sensor platform."""
-    unit_system = config.get(CONF_UNIT_SYSTEM)
-    _LOGGER.debug(f"Using unit system '{unit_system}'")
+    reader = None
+    model = config.get(CONF_MODEL)
+    if model == MODEL_WAVE_PLUS:
+        reader = AirthingsWavePlusDataReader(config.get(CONF_MAC))
+    else:
+        reader = AirthingsWaveDataReader(config.get(CONF_MAC))
 
-    reader = AirthingsWavePlusDataReader(config.get(CONF_MAC))
+    unit_system = config.get(CONF_UNIT_SYSTEM)
+    _LOGGER.debug(f"Using unit system '{unit_system}' for Airthings model '{model}'")
 
     sensors = []
-    for [key, name, icon, device_class] in SENSOR_TYPES:
+    for key in SENSORS_BY_MODEL[model]:
+        [name, icon, device_class] = SENSOR_TYPES[key]
         unit = UNIT_SYSTEMS[unit_system].get(key)
         sensors.append(AirthingsSensorEntity(
             reader, key, name, unit, icon, device_class))
