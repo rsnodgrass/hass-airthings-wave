@@ -11,16 +11,18 @@ from homeassistant.util import Throttle
 from homeassistant.const import STATE_UNKNOWN
 
 from .const import (ATTRIBUTION, ATTR_ATTRIBUTION, DOMAIN, SENSOR_TYPES, MEASURE_VPD, MEASURE_HUMIDITY,
+                    CONF_MODEL, MODEL, SENSORS_BY_MODEL, MODEL_WAVE_PLUS,
                     MIN_TIME_BETWEEN_UPDATES, CONF_MAC, UNIT_SYSTEMS, CONF_UNIT_SYSTEM, UNIT_SYSTEM_IMPERIAL)
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_MAC): cv.string,
+    vol.Optional(CONF_MODEL, default=MODEL_WAVE_PLUS):
+                vol.In(SENSORS_BY_MODEL.keys()),
     vol.Optional(CONF_UNIT_SYSTEM, default=UNIT_SYSTEM_IMPERIAL):
                 vol.In(UNIT_SYSTEMS.keys())
 })
-
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Setup the sensor platform."""
@@ -53,7 +55,7 @@ class AirthingsWavePlusDataReader:
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     def update(self):
-        _LOGGER.debug(f"Updating data from Airthings Wave Plus {self._mac}")
+        _LOGGER.debug(f"Updating data from Airthings Wave {self._mac}")
 
         import pygatt
         from pygatt.backends import Characteristic
@@ -93,6 +95,59 @@ class AirthingsWavePlusDataReader:
         finally:
             adapter.stop()
 
+class AirthingsWaveDataReader:
+    def __init__(self, mac):
+        self._mac = mac
+        self._state = {}
+
+    def get_data(self, key):
+        if key in self._state:
+            return self._state[key]
+        return STATE_UNKNOWN
+
+    @property
+    def mac(self):
+        return self._mac
+
+    @Throttle(MIN_TIME_BETWEEN_UPDATES)
+    def update(self):
+        _LOGGER.debug(f"Updating data from Airthings Wave {self._mac}")
+
+        import pygatt
+        from pygatt.backends import Characteristic
+        adapter = pygatt.backends.GATTToolBackend()
+        # char = 'b42e2a68-ade7-11e4-89d3-123b93f75cba'
+
+        try:
+            # reset_on_start must be false - reset is hardcoded to execute sudo, which doesn't exist
+            # in the hass.io Docker container.
+            adapter.start(reset_on_start=False)
+            device = adapter.connect(self._mac)
+
+            # Unclear why this does not work. Seems broken in the command line tool too. Hopefully handle is stable...
+            # value = device.char_read(char,timeout=10)
+            value = device.char_read_handle('0x000d', timeout=10)
+
+            data = struct.unpack('<4B8H', value)
+            humidity = self._state['humidity'] = data[1] / 2.0
+            self._state['short_radon'] = round(data[4] / 37, 2)
+            self._state['long_radon'] = round(data[5] / 37, 2)
+            self._state['temperature'] = data[6] / 100.0
+
+            temp_celsius = self._state['temperature']  # FIXME: assumed Celsius
+
+            # calculate vapor pressure deficit
+            saturation_vapor_pressure = 0.6108 * \
+                exp(17.27 * temp_celsius / (temp_celsius + 237.3))
+            actual_vapor_pressure = humidity / 100 * saturation_vapor_pressure
+            vapor_pressure_deficit = actual_vapor_pressure - saturation_vapor_pressure
+            self._state[MEASURE_VPD] = vapor_pressure_deficit
+
+        finally:
+            adapter.stop()
+
+
+
 
 class AirthingsSensorEntity(Entity):
     """Representation of a Sensor."""
@@ -113,7 +168,7 @@ class AirthingsSensorEntity(Entity):
     @property
     def name(self):
         """Return the name of the sensor."""
-        return 'Airthings Wave Plus {}'.format(self._name)
+        return 'Airthings Wave {}'.format(self._name)
 
     @property
     def icon(self):

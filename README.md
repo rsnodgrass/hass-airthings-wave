@@ -20,6 +20,17 @@ sensor:
     mac: 00:11:22:AA:BB:CC # replace with MAC of your Airthings Wave+
 ```
 
+Alternative:
+
+```yaml
+sensor:
+  - platform: airthings_wave_plus
+    model: wave # or waveplus
+    unit_system: imperial # or metric
+    mac: 00:11:22:AA:BB:CC # replace with MAC of your Airthings Wave+
+```
+
+
 Then restart Home Assistant and if everything works, you'll have some new sensors named `sensor.airthings_{co2,humidity,longterm_radon,pressure,shortterm_radon,temperature,voc}`
 
 ### See Also
