@@ -20,7 +20,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_MAC): cv.string,
     vol.Optional(CONF_MODEL, default=MODEL_WAVE_PLUS):
                 vol.In(SENSORS_BY_MODEL.keys()),
-    vol.Optional(CONF_UNIT_SYSTEM, default=UNIT_SYSTEM_IMPERIAL):
+    vol.Optional(CONF_UNIT_SYSTEM, default=UNIT_SYSTEM_METRIC):
                 vol.In(UNIT_SYSTEMS.keys())
 })
 

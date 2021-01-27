@@ -33,26 +33,26 @@ Note:
 1. Find the MAC address for your Airthings Wave. See https://airthings.com/us/raspberry-pi/ for details.
 2. Add the following to your `configuration.yaml` (or modify your `sensor` heading, if you already have one):
 
-The default model is the Airthings Wave:
-
 ```yaml
 sensor:
   - platform: airthings_wave
+    model: waveplus
     mac: 00:11:22:AA:BB:CC # replace with MAC of your Airthings Wave+
 ```
-
-COnfiguring the Airthing Wave model:
 
 ```yaml
 sensor:
   - platform: airthings_wave
     model: wave # or waveplus
-    unit_system: imperial # or metric
     mac: 00:11:22:AA:BB:CC # replace with MAC of your Airthings Wave+
+    unit_system: imperial # or metric
 ```
 
-
 Then restart Home Assistant and if everything works, you'll have some new sensors named `sensor.airthings_{co2,humidity,longterm_radon,pressure,shortterm_radon,temperature,voc}`
+
+### Known issues
+
+* The unit_system imperial (Fahrenheit) is likely not working.
 
 ### See Also
 
