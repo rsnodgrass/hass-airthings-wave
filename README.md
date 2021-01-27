@@ -13,7 +13,7 @@ This was developed by [@gkreitz](https://github.com/gkreitz/homeassistant-airthi
 
 From @gkreitz: *I wanted something to read my Airthings Wave Plus, so I built this. Far from production quality. Magic hardcoded constants. Reads data the wrong way to work around a bug. Tested on a single device. Only supports a single Wave Plus. Does not construct a unique id for the sensor. Figured I may as well upload in case it's useful to someone else.*
 
-If you have trouble with installation and configuration, visit the [Airthings Wave Home Assistant community discussion](https://community.home-assistant.io/t/sensorpush-humidity-and-temperature-sensors/105711).
+If you have trouble with installation and configuration, visit the [Airthings Wave Home Assistant community discussion](https://community.home-assistant.io/t/air-quality-monitor-radon-meter-airthings-wave-plus/102836).
 
 **Additional features and bug fixes are the responsibility of the community to implement (unless trivial to add).**
 ## Installation
