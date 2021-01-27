@@ -6,7 +6,9 @@
 
 Home Assistant support for the [Airthing Wave](https://smile.amazon.com/Airthings-Wave-Generation-Easy-Use/dp/B07WWV7K3K?tag=rynoshark-20) and [Airthings Wave Plus](https://smile.amazon.com/Airthings-2930-Quality-Detection-Dashboard/dp/B07JB8QWH6?tag=rynoshark-20) indoor air quality sensors.
 
-**SEE https://github.com/custom-components/sensor.airthings_wave for a sensor that appears to support Wave Plus now**
+SEE ALTERNATIVES:
+* https://github.com/custom-components/sensor.airthings_wave (appears to support Wave Plus now)
+* https://github.com/Danielhiversen/home_assistant_airthings_cloud
 
 ## Support
 
